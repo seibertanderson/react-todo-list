@@ -18,14 +18,22 @@ export default class Todo extends Component {
         this.handleRemove = this.handleRemove.bind(this);
         this.handleMarkAsDone = this.handleMarkAsDone.bind(this);
         this.handleMarkAsPending = this.handleMarkAsPending.bind(this);
-
+        this.handleSearch = this.handleSearch.bind(this);
+        this.handleClear = this.handleClear.bind(this);
         this.refresh();
     }
 
-    refresh() {
-        axios.get(`${URL}?sort=-createdAt`).then(resp =>
-            this.setState({ ...this.state, description: '', list: resp.data })
+    /** Controla o refresh da tela */
+    refresh(description = '') {
+        const search = description ? `&description__regex=/${description}/` : ''
+        axios.get(`${URL}?sort=-createdAt${search}`).then(resp =>
+            this.setState({ ...this.state, description, list: resp.data })
         );
+    }
+
+    /** Controla a ação de pesquisa */
+    handleSearch() {
+        this.refresh(this.state.description)
     }
 
     /** Controla a ação de Inserir */
@@ -46,21 +54,25 @@ export default class Todo extends Component {
 
     /** Controla a ação de Remover */
     handleRemove(todo) {
-        axios.delete(`${URL}/${todo._id}`).then(resp => this.refresh());
+        axios.delete(`${URL}/${todo._id}`).then(resp => this.refresh(this.state.description));
     }
 
     /** Controla a ação de marcar como concluido */
     handleMarkAsDone(todo) {
         debugger
         axios.put(`${URL}/${todo._id}`, { ...todo, done: true, finishAt: new Date() }).then(resp =>
-            this.refresh()
+            this.refresh(this.state.description)
         )
     }
 
     handleMarkAsPending(todo) {
-        axios.put(`${URL}/${todo._id}`, { ...todo, done: false }).then(resp => {
-            this.refresh();
+        axios.put(`${URL}/${todo._id}`, { ...todo, done: false, finishAt: null }).then(resp => {
+            this.refresh(this.state.description);
         })
+    }
+
+    handleClear() {
+        this.refresh();
     }
 
     render() {
@@ -68,11 +80,14 @@ export default class Todo extends Component {
             <div>
                 <PageHeader name="Tarefas" small="Lista"></PageHeader>
 
-                {/* <TodoForm
+                {/* Criar uma pagina separada para o formulario */}
+                <TodoForm
                     description={this.state.description}
                     handleAdd={this.handleAdd}
-                    handleChange={this.handleChange}>
-                </TodoForm> */}
+                    handleChange={this.handleChange}
+                    handleSearch={this.handleSearch}
+                    handleClear={this.handleClear}>
+                </TodoForm>
 
                 <TodoList list={this.state.list}
                     handleRemove={this.handleRemove}
